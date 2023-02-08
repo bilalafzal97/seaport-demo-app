@@ -666,7 +666,7 @@
     table "^6.8.0"
     undici "^5.4.0"
 
-"@opensea/seaport-js@^1.0.4":
+"@opensea/seaport-js@^1.0.5":
   version "1.0.8"
   resolved "https://registry.yarnpkg.com/@opensea/seaport-js/-/seaport-js-1.0.8.tgz#7609e24b6e8b30ebea4dba149379273aa0a271f1"
   integrity sha512-xug0bTfHbu/Oz78hg0cXOPk12yW8EhvXzlqXBrrFkQCzk/6xU245+3oTVg/kHt2oToym0OYUTgREdxU998zRxA==

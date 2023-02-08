@@ -44,9 +44,9 @@ async function main() {
   await createERC721OrderAndFullfill();
   await createERC721OrderAndCancelled();
   await createERC1155OrderAndFullfill();
-  await createERC1155OrderAndCanceled();
-  await createERC721OrderAndFullfillWithToken();
-  await createERC721OrderAndFullfillWithTokenWithFee();
+  // await createERC1155OrderAndCanceled();
+  // await createERC721OrderAndFullfillWithToken();
+  // await createERC721OrderAndFullfillWithTokenWithFee();
 }
 
 main().catch((error) => {
@@ -120,14 +120,18 @@ async function mintTestNFTs() {
   await testERC721Mint3.wait();
   await testERC721Mint4.wait();
 
-  let testERC1155Mint1 = await testERC1155.mint((await ethers.getSigners())[1].address, 1, 2);
-  let testERC1155Mint2 = await testERC1155.mint((await ethers.getSigners())[1].address, 2, 2);
+  let testERC1155Mint1 = await testERC1155.mint((await ethers.getSigners())[1].address, 1, 20);
+  let testERC1155Mint2 = await testERC1155.mint((await ethers.getSigners())[1].address, 2, 20);
 
   await testERC1155Mint1.wait();
   await testERC1155Mint2.wait();
 
   const testERC20Mint = await testERC20.mint((await ethers.getSigners())[2].address, ethers.utils.parseEther("10").toString());
   await testERC20Mint.wait();
+
+  await delay(1000);
+
+  console.log("Test Url: ", (await testERC721.tokenURI(1)));
 }
 
 async function createClients() {
@@ -150,7 +154,7 @@ async function createClients() {
 }
 
 async function createERC721OrderAndFullfill() {
-  const { executeAllActions: signerOneOrderOneAction } = await signerOneSeaClient.createOrder({
+  const { executeAllActions: signerOneOrderOneAction, actions } = await signerOneSeaClient.createOrder({
       offer: [
         {
           itemType: ItemType.ERC721,
@@ -168,20 +172,36 @@ async function createERC721OrderAndFullfill() {
     },
     singerOne.address
   );
+
   const orderOne = await signerOneOrderOneAction();
 
-  const { executeAllActions: singerTwoAllFulfillOneActions } =
+  console.log(actions);
+  console.log(orderOne);
+console.log(signerOneSeaClient.contract.address)
+
+  await delay(1000);
+
+  console.log((await signerOneSeaClient.getOrderStatus((await signerOneSeaClient.getOrderHash(orderOne.parameters)))));
+
+  const { executeAllActions: singerTwoAllFulfillOneActions, actions: fillAction } =
     await signerTwoSeaClient.fulfillOrder({
       order: orderOne,
       accountAddress: singerTwo.address
     });
 
+  console.log("Full Action");
+  console.log(fillAction);
+
   const singerTwoAllFulfillOneTransaction = await singerTwoAllFulfillOneActions();
+
+  await delay(1000);
+
+  console.log((await signerOneSeaClient.getOrderStatus((await signerOneSeaClient.getOrderHash(orderOne.parameters)))));
 
 }
 
 async function createERC721OrderAndCancelled() {
-  const { executeAllActions: signerOneOrderTwoAction } = await signerOneSeaClient.createOrder({
+  const { executeAllActions: signerOneOrderTwoAction, actions:  signerOneOrderTwoActions} = (await signerOneSeaClient.createOrder({
       offer: [
         {
           itemType: ItemType.ERC721,
@@ -198,13 +218,25 @@ async function createERC721OrderAndCancelled() {
       ]
     },
     singerOne.address
-  );
-  const orderTwo = await signerOneOrderTwoAction();
+  ));
 
+  console.log("Checkingingg ggggggggg");
+  // console.log(signerOneOrderTwoAction.)
+
+
+  // console.log((signerOneOrderTwoAction));
+  console.log((signerOneOrderTwoActions.length));
+  console.log(signerOneOrderTwoActions);
+  // console.log((await signerOneOrderTwoActions[0].getMessageToSign()));
+
+  // const orderTwo = await signerOneOrderTwoAction;
+  const orderTwo = await signerOneOrderTwoAction();
   const cancelOrders = await signerOneSeaClient.cancelOrders(
     [orderTwo.parameters],
     orderTwo.parameters.offerer
   ).transact();
+
+  console.log((await signerOneSeaClient.getOrderStatus((await signerOneSeaClient.getOrderHash(orderTwo.parameters)))));
 }
 
 async function createERC1155OrderAndFullfill() {
@@ -215,7 +247,7 @@ async function createERC1155OrderAndFullfill() {
           itemType: ItemType.ERC1155,
           token: testERC1155.address,
           identifier: "1",
-          amount: "2"
+          amount: "5",
         },
       ],
       consideration: [
@@ -224,6 +256,7 @@ async function createERC1155OrderAndFullfill() {
           recipient: singerOne.address,
         },
       ],
+    allowPartialFills: true
     },
     singerOne.address
   );
@@ -232,10 +265,28 @@ async function createERC1155OrderAndFullfill() {
   const { executeAllActions: singerTwoAllFulfillTwoActions } =
     await signerTwoSeaClient.fulfillOrder({
       order: orderThree,
-      accountAddress: singerTwo.address
+      accountAddress: singerTwo.address,
+      unitsToFill: "2"
     });
 
   const singerTwoAllFulfillTwoActionsTransaction = await singerTwoAllFulfillTwoActions();
+
+  await delay(1000);
+
+  console.log((await signerOneSeaClient.getOrderStatus((await signerOneSeaClient.getOrderHash(orderThree.parameters)))));
+
+  const { executeAllActions: singerTwoAllFulfillTwoActions2 } =
+    await signerTwoSeaClient.fulfillOrder({
+      order: orderThree,
+      accountAddress: singerTwo.address,
+      unitsToFill: "2"
+    });
+
+  const singerTwoAllFulfillTwoActionsTransaction2 = await singerTwoAllFulfillTwoActions();
+
+  await delay(1000);
+
+  console.log((await signerOneSeaClient.getOrderStatus((await signerOneSeaClient.getOrderHash(orderThree.parameters)))));
 }
 
 async function createERC1155OrderAndCanceled() {
@@ -338,7 +389,7 @@ async function createERC721OrderAndFullfillWithTokenWithFee() {
       accountAddress: singerTwo.address
     });
 
-  const singerTwoAllFulfillOneTransaction = await singerTwoAllFulfillOneActions();
+  // const singerTwoAllFulfillOneTransaction = await singerTwoAllFulfillOneActions();
 
   await delay(1000);
 
