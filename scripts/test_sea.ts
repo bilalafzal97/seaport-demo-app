@@ -1,6 +1,7 @@
 import { ethers } from "hardhat";
 
 import * as seajs from "@opensea/seaport-js";
+import { ApprovalAction, CreateOrderAction } from "@opensea/seaport-js/lib/types";
 
 import { readFileSync } from "fs";
 
@@ -21,17 +22,23 @@ import { TestERC1155 } from "../typechain/TestERC1155";
 import { ItemType } from "@opensea/seaport-js/lib/constants";
 import * as path from "path";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { Wallet } from "ethers";
+import { TransactionRequest } from "@ethersproject/providers";
 
 let conduitController: ConduitController;
 let seaport: Seaport;
 let testERC20: TestERC20;
 let testERC721: TestERC721;
+let testERC721_2: TestERC721;
 let testERC1155: TestERC1155;
 let signerOneSeaClient: seajs.Seaport;
 let signerTwoSeaClient: seajs.Seaport;
 let singerOne: SignerWithAddress;
 let singerTwo: SignerWithAddress;
 let singerThree: SignerWithAddress;
+let signerOneWallet: Wallet;
+
+let provider = ethers.provider;
 
 async function main() {
   console.log("Hello World");
@@ -41,9 +48,11 @@ async function main() {
   await deployTestERC();
   await mintTestNFTs();
   await createClients();
-  await createERC721OrderAndFullfill();
+  // await createERC721For721OrderAndFullfill();
+  // await createERC721OrderAndFullfill();
+  await getBalance();
   await createERC721OrderAndCancelled();
-  await createERC1155OrderAndFullfill();
+  // await createERC1155OrderAndFullfill();
   // await createERC1155OrderAndCanceled();
   // await createERC721OrderAndFullfillWithToken();
   // await createERC721OrderAndFullfillWithTokenWithFee();
@@ -103,6 +112,10 @@ async function deployTestERC() {
   await testERC721.deployed();
   console.log("TestERC721: ", testERC721.address);
 
+  testERC721_2 = await testERC721Factory.deploy();
+  await testERC721_2.deployed();
+  console.log("testERC721_2: ", testERC721_2.address);
+
   const testERC1155Factory: TestERC1155__factory = await ethers.getContractFactory("TestERC1155");
   testERC1155 = await testERC1155Factory.deploy();
   await testERC1155.deployed();
@@ -120,6 +133,9 @@ async function mintTestNFTs() {
   await testERC721Mint3.wait();
   await testERC721Mint4.wait();
 
+  let testERC721Mint2_1 = await testERC721_2.mint((await ethers.getSigners())[2].address, 1);
+  await testERC721Mint2_1.wait();
+
   let testERC1155Mint1 = await testERC1155.mint((await ethers.getSigners())[1].address, 1, 20);
   let testERC1155Mint2 = await testERC1155.mint((await ethers.getSigners())[1].address, 2, 20);
 
@@ -135,8 +151,10 @@ async function mintTestNFTs() {
 }
 
 async function createClients() {
-  const provider = ethers.getDefaultProvider();
+  const provider = ethers.provider;
+
   singerOne = await ethers.getSigner((await ethers.getSigners())[1].address);
+
   signerOneSeaClient = new seajs.Seaport(singerOne, {
     overrides: {
       contractAddress: seaport.address
@@ -151,6 +169,101 @@ async function createClients() {
   });
 
   singerThree = await ethers.getSigner((await ethers.getSigners())[3].address);
+}
+
+async function getBalance() {
+  const p = new ethers.providers.JsonRpcProvider("https://convincing-lingering-season.matic.quiknode.pro/380138af8e14b8fd6724ed4edb52c9d8fe074f8c/");
+
+// await p.detectNetwork();
+
+  console.log("Balance: ", (await p.getBalance(singerTwo.address)));
+
+  console.log("Gas price: ", (await p.getGasPrice()));
+
+  // console.log("Balance: ", (await provider.getBalance(singerTwo.address)));
+  //
+  // const tx: TransactionRequest = {
+  //   from: singerOne.address,
+  //   to: singerTwo.address,
+  //   value: ethers.utils.parseEther("2")
+  // }
+  //
+  // console.log("Signer Address: ", singerOne.address);
+  //
+  // // const sigTx = await singerOne.signTransaction(tx);
+  //
+  // // const txRe = await provider.sendTransaction(sigTx);
+  //
+  // console.log("Balance 2: ", (await provider.getBalance(singerTwo.address)));
+}
+
+async function createERC721For721OrderAndFullfill() {
+  const { executeAllActions: signerOneOrderOneAction, actions } = await signerOneSeaClient.createOrder({
+      offer: [
+        {
+          itemType: ItemType.ERC721,
+          token: testERC721.address,
+          identifier: "1"
+
+        }
+      ],
+      consideration: [
+        {
+          recipient: singerOne.address,
+          itemType: ItemType.ERC721,
+          identifier: "1",
+          token: testERC721_2.address
+        },
+
+      ]
+    },
+    singerOne.address
+  );
+
+  console.log("ss: ", await testERC721.isApprovedForAll(singerOne.address, seaport.address))
+
+  const orderOne = await signerOneOrderOneAction();
+
+  console.log("ownwe : ", (await testERC721_2.ownerOf(1)));
+  console.log("ownwe : ", singerTwo.address);
+
+  // const sss = actions[0] as ApprovalAction;
+  //
+  // const dddd = actions[1] as CreateOrderAction;
+  //
+  // console.log("order Message: ", await dddd.getMessageToSign());
+  //
+  // console.log("ss: ", await testERC721.isApprovedForAll(singerOne.address, seaport.address))
+
+
+  // signerOneSeaClient.contract.signer.provider?.getTransaction(((await sss.transactionMethods.transact()).hash))
+
+  // console.log((await sss.transactionMethods.transact()));
+//   console.log(orderOne);
+// console.log(signerOneSeaClient.contract.address)
+
+  // await delay(1000);
+  //
+  // console.log((await signerOneSeaClient.getOrderStatus((await signerOneSeaClient.getOrderHash(orderOne.parameters)))));
+  //
+  const { executeAllActions: singerTwoAllFulfillOneActions, actions: fillAction } =
+    await signerTwoSeaClient.fulfillOrder({
+      order: orderOne,
+      accountAddress: singerTwo.address
+    });
+
+  console.log("Full Action");
+  console.log(fillAction);
+
+  const singerTwoAllFulfillOneTransaction = await singerTwoAllFulfillOneActions();
+  //
+  // await delay(1000);
+  //
+  console.log((await signerOneSeaClient.getOrderStatus((await signerOneSeaClient.getOrderHash(orderOne.parameters)))));
+
+  console.log("ownwe : ", (await testERC721_2.ownerOf(1)));
+  console.log("ownwe : ", singerTwo.address);
+  console.log("ownwe : ", singerOne.address);
 }
 
 async function createERC721OrderAndFullfill() {
@@ -173,30 +286,43 @@ async function createERC721OrderAndFullfill() {
     singerOne.address
   );
 
-  const orderOne = await signerOneOrderOneAction();
+  console.log("ss: ", await testERC721.isApprovedForAll(singerOne.address, seaport.address))
 
-  console.log(actions);
-  console.log(orderOne);
-console.log(signerOneSeaClient.contract.address)
+  // const orderOne = await signerOneOrderOneAction();
 
-  await delay(1000);
+  const sss = actions[0] as ApprovalAction;
 
-  console.log((await signerOneSeaClient.getOrderStatus((await signerOneSeaClient.getOrderHash(orderOne.parameters)))));
+  const dddd = actions[1] as CreateOrderAction;
 
-  const { executeAllActions: singerTwoAllFulfillOneActions, actions: fillAction } =
-    await signerTwoSeaClient.fulfillOrder({
-      order: orderOne,
-      accountAddress: singerTwo.address
-    });
+  console.log("order Message: ", await dddd.getMessageToSign());
 
-  console.log("Full Action");
-  console.log(fillAction);
+  console.log("ss: ", await testERC721.isApprovedForAll(singerOne.address, seaport.address))
 
-  const singerTwoAllFulfillOneTransaction = await singerTwoAllFulfillOneActions();
 
-  await delay(1000);
+  // signerOneSeaClient.contract.signer.provider?.getTransaction(((await sss.transactionMethods.transact()).hash))
 
-  console.log((await signerOneSeaClient.getOrderStatus((await signerOneSeaClient.getOrderHash(orderOne.parameters)))));
+  // console.log((await sss.transactionMethods.transact()));
+//   console.log(orderOne);
+// console.log(signerOneSeaClient.contract.address)
+
+  // await delay(1000);
+  //
+  // console.log((await signerOneSeaClient.getOrderStatus((await signerOneSeaClient.getOrderHash(orderOne.parameters)))));
+  //
+  // const { executeAllActions: singerTwoAllFulfillOneActions, actions: fillAction } =
+  //   await signerTwoSeaClient.fulfillOrder({
+  //     order: orderOne,
+  //     accountAddress: singerTwo.address
+  //   });
+  //
+  // console.log("Full Action");
+  // console.log(fillAction);
+  //
+  // const singerTwoAllFulfillOneTransaction = await singerTwoAllFulfillOneActions();
+  //
+  // await delay(1000);
+  //
+  // console.log((await signerOneSeaClient.getOrderStatus((await signerOneSeaClient.getOrderHash(orderOne.parameters)))));
 
 }
 
