@@ -3,11 +3,11 @@ import { ethers } from "hardhat";
 import { SeaportCustom } from "seaportc-js";
 import {
   ApprovalActionCustom,
-  ExchangeActionCustom,
   CreateOrderAction,
-  OrderWithCounter, OrderComponents
+  ExchangeActionCustom,
+  OrderComponents,
+  OrderWithCounter
 } from "seaportc-js/lib/types";
-import { EIP_712_ORDER_TYPE } from "seaportc-js/lib/constants";
 
 import { readFileSync } from "fs";
 
@@ -67,6 +67,7 @@ async function main() {
 
   await createERC721OrderForSignerOneAndFillTheOrderForSignerTwoWithEth();
   await createERC721OrderForSignerOneAndCancelOrder();
+  await createERC721OrderForSignerOneAndFillTheOrderForSignerTwoWithERC20();
 
   // await createERC721OrderAndFullfillC();
 
@@ -309,6 +310,68 @@ async function createERC721OrderForSignerOneAndCancelOrder() {
   );
 
   await handleCancelOrdersTransactionRequest(cancelTx, signerOneWallet);
+}
+
+async function createERC721OrderForSignerOneAndFillTheOrderForSignerTwoWithERC20() {
+  console.log("createERC721OrderForSignerOneAndFillTheOrderForSignerTwoWithERC20");
+
+  assert((await buyingERC20.balanceOf(signerOneWallet.address)).toNumber() == 0, "Invalid Amount");
+
+  // Create Order
+  const {
+    executeAllActions: signerOneOrderExecuteAllActions,
+    actions: signerOneOrderActions
+  } = await addressOneSeaClient.createOrder(
+    {
+      offer: [
+        {
+          itemType: ItemType.ERC721,
+          token: sellingERC721.address,
+          identifier: "2"
+
+        }
+      ],
+      consideration: [
+        {
+          amount: ethers.utils.parseEther("10").toString(),
+          recipient: signerOneWallet.address,
+          token: buyingERC20.address
+        }
+      ]
+    },
+    signerOneWallet.address
+  );
+
+  let orderWithCounter: OrderWithCounter | undefined = undefined;
+
+  for (const createOrderAction of signerOneOrderActions) {
+    if (createOrderAction.type == "approval") {
+      await handleApprovalAction(createOrderAction, signerOneWallet);
+    } else if (createOrderAction.type == "create") {
+      orderWithCounter = await handleCreateOrderAction(createOrderAction, signerOneWallet, addressOneSeaClient);
+    }
+  }
+
+  // Fill the Order
+
+  const { executeAllActions: signerTwoOrderExecuteAllActions, actions: signerTwoOrderActions } =
+    await addressTwoSeaClient.fulfillOrder({
+      order: orderWithCounter as OrderWithCounter,
+      accountAddress: signerTwoWallet.address
+    });
+
+  for (const fillOrderAction of signerTwoOrderActions) {
+    if (fillOrderAction.type == "approval") {
+      await handleApprovalAction(fillOrderAction, signerTwoWallet);
+    } else if (fillOrderAction.type == "exchange") {
+      await handleExchangeAction(fillOrderAction, signerTwoWallet);
+    }
+  }
+
+  // Check
+  assert(signerTwoWallet.address == (await sellingERC721.ownerOf(2)), "Invalid Token Owner");
+  assert((await buyingERC20.balanceOf(signerOneWallet.address)).toString() == ethers.utils.parseEther("10").toString(), "Invalid Amount");
+
 }
 
 async function handleApprovalAction(approvalAction: any | ApprovalActionCustom, wallet: Wallet) {
