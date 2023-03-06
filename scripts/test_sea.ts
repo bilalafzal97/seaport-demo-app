@@ -55,7 +55,7 @@ async function main() {
   // await createERC1155OrderAndFullfill();
   // await createERC1155OrderAndCanceled();
   await createERC721OrderAndFullfillWithToken();
-  // await createERC721OrderAndFullfillWithTokenWithFee();
+  await createERC721OrderAndFullfillWithTokenWithFee();
 }
 
 main().catch((error) => {

@@ -590,6 +590,15 @@
     tweetnacl "^1.0.3"
     tweetnacl-util "^0.15.1"
 
+"@mirrorworld/seaport-js@2.0.6":
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/@mirrorworld/seaport-js/-/seaport-js-2.0.6.tgz#f7835d4088dabf0f0d90745ce78fdf8fe63401b8"
+  integrity sha512-6EEowT63YjtlUN5pmpgfQvZxAv4hNNrsVAAY9m135bf9POFxz2jfhR0uTDDrZaU2Oo45jJBuCfYLR8D9/UBh2w==
+  dependencies:
+    "@0xsequence/multicall" "^0.39.0"
+    ethers "^5.6.7"
+    merkletreejs "^0.2.31"
+
 "@noble/hashes@1.1.2", "@noble/hashes@~1.1.1":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.1.2.tgz#e9e035b9b166ca0af657a7848eb2718f0f22f183"
@@ -5844,15 +5853,6 @@ scrypt-js@3.0.1, scrypt-js@^3.0.0, scrypt-js@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/scrypt-js/-/scrypt-js-3.0.1.tgz#d314a57c2aef69d1ad98a138a21fe9eafa9ee312"
   integrity sha512-cdwTTnqPu0Hyvf5in5asVdZocVDTNRmR7XEcJuIzMjJeSHybHl7vpB66AzwTaIg6CLSbtjcxc8fqcySfnTkccA==
-
-seaportc-js@2.0.4:
-  version "2.0.4"
-  resolved "https://registry.yarnpkg.com/seaportc-js/-/seaportc-js-2.0.4.tgz#26f161ba97b70205b3145bdfedf791b79dc85270"
-  integrity sha512-WZZuff+EF/+x4C2JQgYTLPl6oioNvkZZjeVZIG55BtLiOTd04HpWr96QFAcqW4FjIhcxWtfl6Jhu0p5KmWGx1g==
-  dependencies:
-    "@0xsequence/multicall" "^0.39.0"
-    ethers "^5.6.7"
-    merkletreejs "^0.2.31"
 
 secp256k1@^4.0.1:
   version "4.0.3"

@@ -36,7 +36,7 @@
     "@nomicfoundation/hardhat-toolbox": "^1.0.1",
     "@opensea/seaport-js": "^1.0.5",
     "@rari-capital/solmate": "^6.4.0",
-    "seaportc-js": "2.0.4"
+    "@mirrorworld/seaport-js": "2.0.6"
 
 
 
